@@ -1,0 +1,58 @@
+lib-cov
+*.seed
+*.log
+*.dat
+*.out
+*.pid
+*.gz
+*.swp
+
+pids
+logs
+results
+tmp
+
+# Coverage reports
+.coverage
+
+# Dependency directory
+node_modules
+bower_components
+
+# Editors
+.idea
+*.iml
+.vscode/*
+!.vscode/launch.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Ignore built ts files
+.dist/**/*
+.debug/**/*
+.client.debug/**/*
+.server.debug/**/*
+dist/**/*
+
+#Ignore backup directories and files
+*.bk/**/*
+
+# ignore yarn.lock
+yarn.lock
+
+# ignore parcel's cash
+.parcel-cache
+
+#ignore transpiled filed in trials folder
+trials/**/*.js
+trials/**/*.map
+trials/ts-eg/.out
+
+# API keys and secrets
+.env
+__pycache__/
+
+# Ignore virtual environments
+kafka_env/

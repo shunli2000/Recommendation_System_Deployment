@@ -1,0 +1,29 @@
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommender
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: recommender
+  template:
+    metadata:
+      labels:
+        app: recommender
+    spec:
+      containers:
+      - name: flask-recommender
+        image: flask-recommender:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8082
+        volumeMounts:
+        - name: model-volume
+          mountPath: /app/ML/models
+      volumes:
+      - name: model-volume
+        hostPath:
+          path: /models
+          type: Directory

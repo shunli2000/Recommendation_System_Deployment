@@ -1,0 +1,111 @@
+import pandas as pd
+from surprise import Dataset, Reader, SVD
+from surprise.model_selection import train_test_split, GridSearchCV
+from surprise import accuracy
+import pickle
+import mlflow
+from mlflow.models import infer_signature
+import mlflow.pyfunc
+
+class SVDCFModel(mlflow.pyfunc.PythonModel):
+    def __init__(self, model=None):
+        self.model = model
+    
+    def train(self, data_path):
+        # Load data
+        df = pd.read_csv(data_path)
+        df.dropna(inplace=True)
+        reader = Reader(rating_scale=(df['watch_count'].min(), df['watch_count'].max()))
+        data = Dataset.load_from_df(df[['user_id', 'movie_id', 'watch_count']], reader)
+
+        # Split data into train and test sets
+        self.trainset, testset = train_test_split(data, test_size=0.2)
+
+        # Define parameter grid
+        param_grid = {
+            "n_epochs": [5, 10],
+            "lr_all": [0.002, 0.005],
+            "reg_all": [0.4, 0.6]
+        }
+
+        # Perform grid search
+        gs = GridSearchCV(SVD, param_grid, measures=["rmse"], cv=3)
+        gs.fit(data)
+        best_params = gs.best_params["rmse"]
+
+        # Train model with best parameters
+        self.model = SVD(n_epochs=best_params['n_epochs'],
+                         lr_all=best_params['lr_all'],
+                         reg_all=best_params['reg_all'])
+        self.model.fit(self.trainset)
+
+        # Evaluate the model
+        predictions = self.model.test(testset)
+        rmse_value = accuracy.rmse(predictions)
+
+        return {
+            'n_epochs': best_params['n_epochs'],
+            'lr_all': best_params['lr_all'],
+            'reg_all': best_params['reg_all'],
+            'rmse': rmse_value
+        }
+
+    def predict(self, context, model_input):
+        # This method is required by mlflow.pyfunc.PythonModel
+        # model_input should be a DataFrame with 'user_id' and 'movie_id' columns
+        predictions = []
+        for _, row in model_input.iterrows():
+            pred = self.model.predict(row['user_id'], row['movie_id']).est
+            predictions.append(pred)
+        return predictions
+
+    def save_model(self, model_path):
+        with open(model_path, 'wb') as f:
+            pickle.dump(self.model, f)
+
+    def load_model(self, model_path):
+        with open(model_path, 'rb') as f:
+            self.model = pickle.load(f)
+
+if __name__ == "__main__":
+    # Set MLFlow tracking URI and experiment name
+    uri = "http://127.0.0.1:6001"
+    mlflow.set_tracking_uri(uri)
+    
+    email = "abhave@andrew.cmu.edu"
+    experiment_name = f"{email}-svd-recommender"
+    mlflow.set_experiment(experiment_name)
+    
+    # Start MLFlow run
+    with mlflow.start_run():
+        # Initialize and train model
+        model = SVDCFModel()
+        print("Training model...")
+        best_params = model.train('ML/user_movie.csv')
+        print("Model trained successfully!")
+        
+        # Log parameters and metrics
+        mlflow.log_params({
+            'n_epochs': best_params['n_epochs'],
+            'lr_all': best_params['lr_all'],
+            'reg_all': best_params['reg_all']
+        })
+        mlflow.log_metric("rmse", best_params['rmse'])
+        
+        # Log model
+        signature = infer_signature(
+            pd.DataFrame({'user_id': [1], 'movie_id': [1]}),  # Example input
+            model.predict(None, pd.DataFrame({'user_id': [1], 'movie_id': [1]}))  # Example output
+        )
+        
+        # Save the model using MLFlow
+        mlflow.pyfunc.log_model(
+            artifact_path="svd_recommender",
+            python_model=model,
+            registered_model_name="SVD_Recommender",
+            signature=signature
+        )
+        
+        # Also save the model to disk if needed
+        model.save_model('ML/models/SVDCF.pkl')
+        print("Model saved successfully!")

@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  model-service1:
+    build:
+      context: .
+      dockerfile: API/flask.Dockerfile
+    command: python API/app.py --model_path ML/models/service1/SVDCF.pkl --port 8083
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./ML:/app/ML
+    environment:
+      POSTGRES_DB: movie_data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mlip-007
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+
+  model-service2:
+    build:
+      context: .
+      dockerfile: API/flask.Dockerfile
+    command: python API/app.py --model_path ML/models/service2/SVDCF.pkl --port 8083
+    ports:
+      - "8084:8083"
+    volumes:
+      - ./ML:/app/ML
+    environment:
+      POSTGRES_DB: movie_data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mlip-007
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+
+  load-balancer:
+    build:
+      context: .
+      dockerfile: API/load_balancer.Dockerfile
+    command: python API/load_balancer.py
+    ports:
+      - "8082:8082"
+    depends_on:
+      - model-service1
+      - model-service2
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - load-balancer
+    networks:
+      - backend
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: nodeexporter
+    ports:
+      - "9100:9100"
+    depends_on:
+      - load-balancer
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - load-balancer
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
