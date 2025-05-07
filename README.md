@@ -4,11 +4,11 @@ This repository contains our end-to-end production-ready movie recommendation sy
 
 ## 🔧 Engineering Highlights
 
-- Built and deployed a **Flask API behind a Python load balancer on Kubernetes**, enabling scalable and fault-tolerant inference.
+- Built and deployed a **Flask API behind a Python load balancer on Kubernetes**, hosted on **AWS EC2** for scalable and fault-tolerant inference.
 - Set up **CI/CD pipelines** with Docker and Jenkins to ensure consistent, automated deployments.
 - Automated **model tracking and experiment management** using MLflow.
 - **Monitored performance and reliability** using Grafana dashboards, with **proactive alerting** to detect and address system issues in real time.
-- Followed full **Software Development Life Cycle (SDLC)** best practices, including Git version control, peer reviews, and automated quality checks.
+- Followed full **Software Development Life Cycle (SDLC)** best practices, including **Git version control**, peer reviews, and automated quality checks.
 
 ## 🛠️ Key Features
 
