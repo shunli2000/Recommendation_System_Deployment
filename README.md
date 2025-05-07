@@ -45,4 +45,4 @@ Automation: Docker + Jenkins for CI/CD and containerized workflows
 Experimentation: MLflow for model versioning and reproducibility
 
 ## 🙌 Team
-Po-Chun Chen, Jiahao Guo, Anushka Bhave, Shun Li, Gilbert Wu
+Po-Chun Chen, Jiahao Guo, Shun Li, Gilbert Wu, Anushka Bhave, 
